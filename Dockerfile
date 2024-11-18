@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Add the GPG key for the MEGA repository
-RUN wget -O /etc/apt/trusted.gpg.d/mega.gpg https://mega.nz/linux/repo/xUbuntu_22.04/Release.gpg
+RUN wget -O /etc/apt/trusted.gpg.d/mega.gpg https://mega.nz/linux/repo/xUbuntu_24.10/Release.gpg
 
 # Add repository sources
 RUN echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe" >> /etc/apt/sources.list.d/jammy.list
