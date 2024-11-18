@@ -1,29 +1,51 @@
-# Use the latest Alpine Linux image as the base
-FROM alpine:latest
+# Use Ubuntu 24.10 as the base
+FROM ubuntu:24.10
 
 # Set environment variables
 ENV DISPLAY=:99 \
-    NOVNC_PORT=8080
+    NOVNC_PORT=8080 \
+    DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
-RUN apk add --no-cache \
-    dolphin-emu \
+# Update package lists and install dependencies
+RUN apt-get update && apt-get install -y \
+    flatpak \
+    x11-xserver-utils \
     xvfb \
-    git \
     python3 \
-    py3-pip \
-    wget && \
-    pip3 install websockify
+    python3-pip \
+    wget \
+    novnc \
+    websockify \
+    gnupg2 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Clone and set up noVNC
-RUN git clone https://github.com/novnc/noVNC.git /opt/novnc && \
-    git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify && \
-    chmod +x /opt/novnc/utils/launch.sh
+# Add the GPG key for the MEGA repository using the recommended method
+RUN wget -O /etc/apt/trusted.gpg.d/mega.gpg https://mega.nz/linux/repo/xUbuntu_22.04/Release.gpg
 
-# Download the file from Mega.nz
-RUN wget -O /path/to/downloaded/file.iso "https://mega.nz/#!MSkw2CqQ!Mg7l7x7-bllT2h1S6OxK4TuNSFN1Mn-VzKJtvf6Fzcs"
+# Add the old repository source for dependencies
+RUN echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe" >> /etc/apt/sources.list.d/jammy.list
+
+# Update package lists again and install required dependencies
+RUN apt-get update && apt-get install -y \
+    libmediainfo0v5 \
+    libpcrecpp0v5 \
+    libzen0t64 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install MEGAcmd for Ubuntu 24.10
+RUN wget https://mega.nz/linux/repo/xUbuntu_24.10/amd64/megacmd-xUbuntu_24.10_amd64.deb && \
+    apt-get install -y ./megacmd-xUbuntu_24.10_amd64.deb && \
+    rm megacmd-xUbuntu_24.10_amd64.deb
+
+# Setup Flatpak and install Dolphin
+RUN flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo && \
+    flatpak install -y flathub org.DolphinEmu.dolphin-emu
+
+# Create a directory for the game ISO
+RUN mkdir -p /games
+
+# Download the file from Mega.nz and save it as codbo.iso using megadl
+RUN megadl "https://mega.nz/file/MSkw2CqQ#Mg7l7x7-bllT2h1S6OxK4TuNSFN1Mn-VzKJtvf6Fzcs" -o /games/codbo.iso
 
 # Add the startup commands directly
-CMD Xvfb :99 -screen 0 1024x768x24 & \
-    dolphin-emu --headless --exec="/path/to/downloaded/file.iso" & \
-    /opt/novnc/utils/launch.sh --vnc localhost:5900 --listen $NOVNC_PORT
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1024x768x24 & flatpak run --user org.DolphinEmu.dolphin-emu --headless /games/codbo.iso & websockify --web /usr/share/novnc/ $NOVNC_PORT localhost:5900"]
