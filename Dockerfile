@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y \
     websockify \
     gnupg2 \
     libxcb-cursor0 \
+    libglu1-mesa \
+    libxrender1 \
+    libxrandr2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Add the GPG key for the MEGA repository
@@ -56,6 +59,7 @@ RUN flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.
 CMD ["sh", "-c", "\
     Xvfb :99 -screen 0 1024x768x24 & \
     sleep 2; \
+    export DISPLAY=:99; \
     flatpak run --env=DISPLAY=:99 org.DolphinEmu.dolphin-emu --play /games/codbo1.iso /games/codbo2.iso & \
     sleep 5; \
-    websockify --web /usr/share/novnc/ $NOVNC_PORT localhost:5900"]
+    websockify --web /usr/share/novnc/ $NOVNC_PORT localhost:5900 && wait"]
